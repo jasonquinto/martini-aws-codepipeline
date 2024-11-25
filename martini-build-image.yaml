@@ -9,7 +9,7 @@ phases:
     commands:
       # Fetch environment variables from Parameter Store
       - echo "Fetching environment variables from Parameter Store..."
-      - PARAMETER=$(aws ssm get-parameter --name "parameter_name" --with-decryption --query "Parameter.Value" --output text)
+      - PARAMETER=$(aws ssm get-parameter --name "$PARAMETER_NAME" --with-decryption --query "Parameter.Value" --output text)
       - MARTINI_VERSION=$(echo $PARAMETER | jq -r '.MARTINI_VERSION')
       - AWS_REGION=$(echo $PARAMETER | jq -r '.AWS_REGION')
       - AWS_ACCOUNT_ID=$(echo $PARAMETER | jq -r '.AWS_ACCOUNT_ID')
