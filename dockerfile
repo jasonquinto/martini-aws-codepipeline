@@ -9,7 +9,8 @@ ENV MARTINI_HOME=/tmp/martini
 ENV JAVA_OPTS="-Dmartini.home=${MARTINI_HOME} -Xlog:gc*=debug:file=/tmp/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=10M"
 
 # Ensure writable directories exist
-RUN mkdir -p /tmp/martini/conf/broker \
+RUN mkdir -p /tmp/martini \
+             /tmp/martini/conf/broker \
              /tmp/martini/data/jms \
              /tmp/martini/web/WEB-INF \
              /tmp/logs
