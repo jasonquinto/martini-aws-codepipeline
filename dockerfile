@@ -12,10 +12,10 @@ ENV JAVA_OPTS="-Xlog:gc*=debug:file=${LOG_DIR}/gc.log:time,uptime,level,tags:fil
 RUN mkdir -p /tmp/logs
 
 # Copy packages to the MR image
-COPY packages /data/packages
+COPY packages /tmp/packages
 
-# Set the working directory
-WORKDIR /data
+# Set the working directory to /tmp
+WORKDIR /tmp
 
 # Ensure the default command runs as expected
 CMD ["bin/toro-martini"]
