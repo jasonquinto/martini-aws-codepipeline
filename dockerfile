@@ -2,20 +2,23 @@
 ARG MARTINI_VERSION
 FROM toroio/martini-runtime:${MARTINI_VERSION}
 
-# Set a writable directory for logs in AWS Lambda
-ENV LOG_DIR=/tmp/logs
+# Set Martini home to /tmp/martini
+ENV MARTINI_HOME=/tmp/martini
 
-# Update the JAVA_OPTS to write GC logs to the writable directory
-ENV JAVA_OPTS="-Xlog:gc*=debug:file=${LOG_DIR}/gc.log:time,uptime,level,tags:filecount=10,filesize=10M:age*=debug"
+# Update Java options to use /tmp for logs
+ENV JAVA_OPTS="-Dmartini.home=${MARTINI_HOME} -Xlog:gc*=debug:file=/tmp/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=10M"
 
-# Ensure the writable directory exists
-RUN mkdir -p /tmp/logs
+# Ensure writable directories exist
+RUN mkdir -p /tmp/martini/conf/broker \
+             /tmp/martini/data/jms \
+             /tmp/martini/web/WEB-INF \
+             /tmp/logs
 
-# Copy packages to the MR image
-COPY packages /tmp/packages
+# Copy packages to /tmp/martini/packages
+COPY packages /tmp/martini/packages
 
-# Set the working directory to /tmp
-WORKDIR /tmp
+# Set the working directory to Martini home
+WORKDIR /tmp/martini
 
 # Ensure the default command runs as expected
 CMD ["bin/toro-martini"]
