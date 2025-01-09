@@ -19,8 +19,5 @@ RUN mkdir -p /tmp/martini \
 # Copy packages to /tmp/martini/packages
 COPY packages /tmp/martini/packages
 
-# Set the working directory to Martini home
-WORKDIR /tmp/martini
-
 # Ensure the default command runs as expected
 CMD ["bin/toro-martini"]
