@@ -2,9 +2,6 @@
 ARG MARTINI_VERSION
 FROM toroio/martini-runtime:${MARTINI_VERSION}
 
-# Set Martini home to /tmp/martini
-ENV MARTINI_HOME=/tmp/martini
-
 # Update Java options to use /tmp for logs
 ENV JAVA_OPTS="-Dmartini.home=${MARTINI_HOME} -Xlog:gc*=debug:file=/tmp/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=10M"
 
