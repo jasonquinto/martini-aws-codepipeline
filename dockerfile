@@ -13,7 +13,8 @@ RUN mkdir -p /tmp/martini \
              /tmp/martini/conf/broker \
              /tmp/martini/data/jms \
              /tmp/martini/web/WEB-INF \
-             /tmp/logs
+             /tmp/logs \
+    && ls -R /tmp/martini
 
 # Copy packages to /tmp/martini/packages
 COPY packages /tmp/martini/packages
