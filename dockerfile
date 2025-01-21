@@ -8,19 +8,12 @@ ENV MARTINI_HOME=/tmp/martini
 # Update Java options to use /tmp for logs
 ENV JAVA_OPTS="-Dmartini.home=${MARTINI_HOME} -Xlog:gc*=debug:file=/tmp/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=10M"
 
-# Ensure writable directories exist
-RUN mkdir -p /tmp/martini \
-             /tmp/martini/conf/broker \
-             /tmp/martini/data/jms \
-             /tmp/martini/web/WEB-INF \
-             /tmp/logs \
-    && ls -R /tmp/martini
+# Copy the packages to a static directory in the image
+COPY packages /martini-packages
 
-# Copy packages to /tmp/martini/packages
-COPY packages /tmp/martini/packages
+# Add an entrypoint script to handle runtime directory creation
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Set the working directory to Martini home
-WORKDIR /tmp/martini
-
-# Ensure the default command runs as expected
-CMD ["bin/toro-martini"]
+# Use the entrypoint script to recreate directories and start the application
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
