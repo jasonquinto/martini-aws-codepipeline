@@ -2,18 +2,11 @@
 ARG MARTINI_VERSION
 FROM toroio/martini-runtime:${MARTINI_VERSION}
 
-# Set Martini home to /tmp/martini
-ENV MARTINI_HOME=/tmp/martini
+# Copy packages to the MR image
+COPY packages /data/packages
 
-# Update Java options to use /tmp for logs
-ENV JAVA_OPTS="-Dmartini.home=${MARTINI_HOME} -Xlog:gc*=debug:file=/tmp/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=10M"
+# Replace the existing file
+COPY log4j2.properties /data/conf/overrides/log4j2.properties
 
-# Copy the packages to a static directory in the image
-COPY packages /martini-packages
-
-# Add an entrypoint script to handle runtime directory creation
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Use the entrypoint script to recreate directories and start the application
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Set the working directory
+WORKDIR /data
