@@ -8,5 +8,7 @@ COPY packages /data/packages
 # Replace the existing file
 COPY log4j2.properties /data/conf/overrides/log4j2.properties
 
+RUN ls -la /data/conf/overrides
+
 # Set the working directory
 WORKDIR /data
