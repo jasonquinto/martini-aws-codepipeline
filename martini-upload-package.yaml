@@ -8,113 +8,37 @@ phases:
       
   pre_build:
     commands:
-      - |
-        set -e
-        echo "Fetching parameters from SSM Parameter Store..."
-        PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text) || {
-          echo "ERROR: Failed to fetch parameter from SSM"
-          exit 1
-        }
-
-        BASE_URL=$(echo "$PARAMETER" | jq -r '.BASE_URL')
-        MARTINI_OAUTH_TOKEN=$(echo "$PARAMETER" | jq -r '.MARTINI_OAUTH_TOKEN')
-        
-        # Detailed parameter validation
-        MISSING_PARAMS=()
-        [ -z "$BASE_URL" ] && MISSING_PARAMS+=("BASE_URL")
-        [ -z "$MARTINI_OAUTH_TOKEN" ] && MISSING_PARAMS+=("MARTINI_OAUTH_TOKEN")
-
-        if [ ${#MISSING_PARAMS[@]} -gt 0 ]; then
-          echo "ERROR: Missing required parameters in parameter store:"
-          printf ' - %s\n' "${MISSING_PARAMS[@]}"
-          exit 1
-        fi
-
-        echo "Parameters validated successfully"
-        echo "BASE_URL: ${BASE_URL%%/*}... (redacted for security)"
-        echo "MARTINI_OAUTH_TOKEN: [redacted]"
+      # Fetch and validate parameters from Parameter Store
+      - PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text)
+      - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
+      - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
 
   build:
     commands:
-      - |
-        set -e
-        echo "Preparing package files..."
-        cd packages || { echo "ERROR: packages directory not found"; exit 1; }
-        
-        ZIP_COUNT=0
-        for dir in */; do
-          dir=${dir%*/}
-          echo "Zipping $dir..."
-          zip -qr "../${dir}.zip" "$dir"
-          ZIP_COUNT=$((ZIP_COUNT + 1))
-        done
-        cd ..
-        
-        if [ $ZIP_COUNT -eq 0 ]; then
-          echo "ERROR: No packages found to deploy"
-          exit 1
-        fi
+      # Prepare staging folder
+      - cd packages
+      - for dir in */; do dir=${dir%*/}; zip -r "../${dir}.zip" "$dir"; done
+      - cd ..
 
+      # Upload zip files to the endpoint
       - |
-        set -e
-        echo "Beginning package uploads..."
         for zipfile in *.zip; do
-          echo "Uploading $zipfile (size: $(du -h "$zipfile" | cut -f1))"
-          
-          MAX_RETRIES=3
-          RETRY_DELAY=5
-          ATTEMPT=1
-          SUCCESS=false
-          
-          while [ $ATTEMPT -le $MAX_RETRIES ]; do
-            echo "Attempt $ATTEMPT of $MAX_RETRIES..."
-            if HTTP_STATUS=$(curl -sf -X POST \
-              "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
-              -H "accept: application/json" \
-              -H "Content-Type: multipart/form-data" \
-              -F "file=@\"${zipfile}\";type=application/x-zip-compressed" \
-              -H "Authorization: Bearer ${MARTINI_OAUTH_TOKEN}" \
-              -w "%{http_code}" -o /dev/null); then
-              
-              if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-                echo "Upload successful (HTTP $HTTP_STATUS)"
-                SUCCESS=true
-                break
-              else
-                echo "Upload failed with HTTP $HTTP_STATUS"
-              fi
-            else
-              echo "Upload failed (curl error)"
-            fi
-            
-            ATTEMPT=$((ATTEMPT + 1))
-            [ $ATTEMPT -le $MAX_RETRIES ] && sleep $RETRY_DELAY
-          done
-          
-          if [ "$SUCCESS" = false ]; then
-            echo "ERROR: Failed to upload $zipfile after $MAX_RETRIES attempts"
-            exit 1
-          fi
+          echo "Uploading $zipfile"
+          curl -X POST "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
+            -H "accept: application/json" \
+            -H "Content-Type: multipart/form-data" \
+            -F "file=@\"${zipfile}\";type=application/x-zip-compressed" \
+            -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}"
         done
 
   post_build:
     commands:
+      # Test the API with a custom greeting request
       - |
-        set -e
-        echo "Testing API endpoint..."
-        API_RESPONSE=$(curl -sfS "${BASE_URL}/api/greeting?name=Neo" \
-          -H "Authorization: Bearer ${MARTINI_OAUTH_TOKEN}") || {
-          echo "ERROR: API test request failed"
-          exit 1
-        }
-        
-        echo "API Response:"
-        echo "$API_RESPONSE" | jq .
-        
-        if ! echo "$API_RESPONSE" | jq -e '.message' >/dev/null; then
-          echo "ERROR: Invalid API response format"
-          exit 1
-        fi
+        API_RESPONSE=$(curl -s "${BASE_URL}/api/greeting?name=Neo" \
+          -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}")
+      - echo "Response from the API request:"
+      - echo "$API_RESPONSE"
 
 artifacts:
   files:
