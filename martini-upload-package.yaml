@@ -3,8 +3,8 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
-      - apt-get update && apt-get install -y jq
+      # Install dependencies if needed
+      - echo "Skipping dependency installation (customize as needed)"
 
   pre_build:
     commands:
