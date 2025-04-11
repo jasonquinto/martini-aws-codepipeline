@@ -5,39 +5,77 @@ phases:
     commands:
       # Install dependencies if needed
       - echo "Skipping dependency installation (customize as needed)"
-      
+
   pre_build:
     commands:
-      # Fetch and validate parameters from Parameter Store
-      - PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text)
-      - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
-      - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
+      - |
+        set -eo pipefail
+        echo "Fetching parameters from SSM..."
+        PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text) || {
+          echo "##[error] Failed to fetch parameter from SSM"
+          exit 1
+        }
+
+        BASE_URL=$(echo "$PARAMETER" | jq -r '.BASE_URL // empty')
+        MARTINI_ACCESS_TOKEN=$(echo "$PARAMETER" | jq -r '.MARTINI_ACCESS_TOKEN // empty')
+
+        if [[ -z "$BASE_URL" || -z "$MARTINI_ACCESS_TOKEN" ]]; then
+          echo "##[error] Missing required parameters:"
+          [ -z "$BASE_URL" ] && echo " - BASE_URL"
+          [ -z "$MARTINI_ACCESS_TOKEN" ] && echo " - MARTINI_ACCESS_TOKEN"
+          exit 1
+        fi
 
   build:
     commands:
-      # Prepare staging folder
-      - cd packages
-      - for dir in */; do dir=${dir%*/}; zip -r "../${dir}.zip" "$dir"; done
-      - cd ..
-
-      # Upload zip files to the endpoint
       - |
+        set -eo pipefail
+        echo "Preparing packages..."
+        if [ ! -d "packages" ]; then
+          echo "##[error] packages directory not found"
+          exit 1
+        fi
+
+        cd packages
+        for dir in */; do
+          dir=${dir%*/}
+          echo "Compressing ${dir}..."
+          zip -qr "../${dir}.zip" "$dir" || {
+            echo "##[error] Failed to compress ${dir}"
+            exit 1
+          }
+        done
+        cd ..
+
+      - |
+        set -eo pipefail
+        echo "Uploading packages..."
         for zipfile in *.zip; do
-          echo "Uploading $zipfile..."
-          upload_response=$(curl --silent --show-error --fail -X POST "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
+          echo "Uploading ${zipfile}..."
+          api_response=$(curl --max-time 30 --silent --show-error --fail -X POST \
+            "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
             -H "accept: application/json" \
             -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}" \
-            -F "file=@\"${zipfile}\";type=application/x-zip-compressed")
+            -F "file=@\"${zipfile}\";type=application/x-zip-compressed" 2>&1) || {
+            echo "##[error] Upload failed for ${zipfile}"
+            echo "$api_response"
+            exit 1
+          }
+          echo "Upload successful"
         done
 
   post_build:
     commands:
-      # Test the API with a custom greeting request
       - |
-        API_RESPONSE=$(curl -s "${BASE_URL}/api/greeting?name=Neo" \
-          -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}")
-      - echo "Response from the API request:"
-      - echo "$API_RESPONSE"
+        set -eo pipefail
+        echo "Validating access token..."
+        if ! curl --max-time 10 --silent --head --fail \
+          "${BASE_URL}/esbapi/validate-token" \
+          -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}" >/dev/null 2>&1; then
+          echo "##[error] Access token validation failed"
+          exit 1
+        fi
+        echo "Access token is valid"
 
 artifacts:
   files:
