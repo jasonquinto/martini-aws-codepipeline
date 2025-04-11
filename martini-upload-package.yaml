@@ -30,7 +30,7 @@ phases:
             -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}"
         done
 
-  ppost_build:
+  post_build:
   commands:
     - |
       # Silent start (no initial echo)
