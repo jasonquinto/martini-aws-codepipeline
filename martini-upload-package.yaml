@@ -32,14 +32,26 @@ phases:
 
   post_build:
     commands:
-      # Test the API with a custom greeting request
+      # Verify packages were uploaded successfully
       - |
-        API_RESPONSE=$(curl -s "${BASE_URL}/api/greeting?name=Neo" \
+        echo "Checking uploaded packages..."
+        PACKAGES_RESPONSE=$(curl -s "${BASE_URL}/esbapi/packages" \
           -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}")
-      - echo "Response from the API request:"
-      - echo "$API_RESPONSE"
+      - echo "Uploaded packages:"
+      - echo "$PACKAGES_RESPONSE"
+      # Verify what if packages were uploaded and return which package didn't if any
+      - |
+        for zipfile in *.zip; do
+          pkg_name=${zipfile%.zip}
+          if ! echo "$PACKAGES_RESPONSE" | grep -q "$pkg_name"; then
+            echo "ERROR: Package $pkg_name not found in Martini"
+            exit 1
+          else
+            echo "SUCCESS: Package $pkg_name verified in Martini"
+          fi
+        done
 
 artifacts:
   files:
-    - '**/*'
+    - '*.zip'
   discard-paths: yes
