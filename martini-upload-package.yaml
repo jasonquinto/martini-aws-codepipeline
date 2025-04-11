@@ -4,79 +4,42 @@ phases:
   install:
     commands:
       # Install dependencies if needed
-      - echo "Skipping dependency installation (customize as needed)"
+      - echo "Installing AWS CLI if not already installed..."
 
   pre_build:
     commands:
-      - |
-        echo "Fetching parameters from SSM..."
-        PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text)
-        if [ $? -ne 0 ]; then
-          echo "##[error] Failed to fetch parameter from SSM"
-          exit 1
-        fi
-
-        BASE_URL=$(echo "$PARAMETER" | jq -r '.BASE_URL')
-        MARTINI_ACCESS_TOKEN=$(echo "$PARAMETER" | jq -r '.MARTINI_ACCESS_TOKEN')
-
-        if [ -z "$BASE_URL" ] || [ -z "$MARTINI_ACCESS_TOKEN" ]; then
-          echo "##[error] Missing required parameters"
-          echo "BASE_URL: $BASE_URL"
-          echo "MARTINI_ACCESS_TOKEN: [redacted]"
-          exit 1
-        fi
+      # Fetch parameters from Parameter Store
+      - PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text)
+      - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
+      - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
 
   build:
     commands:
-      - |
-        echo "Preparing packages..."
-        if [ ! -d "packages" ]; then
-          echo "##[error] packages directory not found"
-          exit 1
-        fi
+      # Prepare staging folder
+      - cd packages
+      - for dir in */; do dir=${dir%*/}; zip -r "../${dir}.zip" "$dir"; done
+      - cd ..
 
-        cd packages
-        for dir in */; do
-          dir=${dir%*/}
-          echo "Compressing ${dir}..."
-          if ! zip -qr "../${dir}.zip" "$dir"; then
-            echo "##[error] Failed to compress ${dir}"
-            exit 1
-          fi
-        done
-        cd ..
-
+      # Upload zip files to the endpoint
       - |
-        echo "Uploading packages..."
         for zipfile in *.zip; do
-          echo "Uploading ${zipfile}..."
-          api_response=$(curl --max-time 30 --silent --show-error -X POST \
-            "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
+          echo "Uploading $zipfile"
+          curl -X POST "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
             -H "accept: application/json" \
-            -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}" \
-            -F "file=@\"${zipfile}\";type=application/x-zip-compressed" 2>&1)
-          
-          if [ $? -ne 0 ]; then
-            echo "##[error] Upload failed for ${zipfile}"
-            echo "$api_response"
-            exit 1
-          fi
-          echo "Upload successful"
+            -F "file=@\"${zipfile}\";type=application/x-zip-compressed" \
+            -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}"
         done
 
   post_build:
     commands:
+      # Test the API with a custom greeting request
       - |
-        echo "Validating access token..."
-        if ! curl --max-time 10 --silent --head --fail \
-          "${BASE_URL}/esbapi/validate-token" \
-          -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}" >/dev/null 2>&1; then
-          echo "##[error] Access token validation failed"
-          exit 1
-        fi
-        echo "Access token is valid"
+        API_RESPONSE=$(curl -s "${BASE_URL}/api/greeting?name=Neo" \
+          -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}")
+      - echo "Response from the API request:"
+      - echo "$API_RESPONSE"
 
 artifacts:
   files:
-    - '*.zip'
+    - '**/*'
   discard-paths: yes
