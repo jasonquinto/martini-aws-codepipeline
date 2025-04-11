@@ -23,12 +23,11 @@ phases:
       # Upload zip files to the endpoint
       - |
         for zipfile in *.zip; do
-          echo "Uploading $zipfile"
-          curl -X POST "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
+          echo "Uploading $zipfile..."
+          upload_response=$(curl --silent --show-error --fail -X POST "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
             -H "accept: application/json" \
-            -H "Content-Type: multipart/form-data" \
-            -F "file=@\"${zipfile}\";type=application/x-zip-compressed" \
-            -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}"
+            -H "Authorization: Bearer ${MARTINI_ACCESS_TOKEN}" \
+            -F "file=@\"${zipfile}\";type=application/x-zip-compressed")
         done
 
   post_build:
