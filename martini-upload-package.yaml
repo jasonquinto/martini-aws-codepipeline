@@ -11,7 +11,7 @@ phases:
       - |
         set -eo pipefail
         echo "Fetching parameters from SSM..."
-        PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text) || {
+        PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text) || {
           echo "##[error] Failed to fetch parameter from SSM"
           exit 1
         }
