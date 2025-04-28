@@ -2,7 +2,8 @@ version: 0.2
 
 env:
   variables:
-    # Default variables when needed
+    # Define the parameter name for fetching from Parameter Store
+    PARAMETER_NAME: "martini-upload-package"
 
 phases:
   install:
@@ -13,7 +14,7 @@ phases:
   pre_build:
     commands:
       # Fetch parameters from Parameter Store
-      - PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to fetch parameter: ${PARAMETER_NAME}"; exit 1; }
+      - PARAMETER=$(aws ssm get-parameter --name PARAMETER_NAME --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to fetch parameter: PARAMETER_NAME; exit 1; }
       - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
       - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
       - ALLOWED_PACKAGES=$(echo $PARAMETER | jq -r '.ALLOWED_PACKAGES')
