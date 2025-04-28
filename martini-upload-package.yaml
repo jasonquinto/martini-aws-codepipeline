@@ -4,18 +4,18 @@ env:
   variables:
     # Default values for client_id and client_secret
     CLIENT_ID: "TOROMartini"
+    PARAMETER_NAME: "martini-upload-package"
 
 phases:
   install:
     commands:
       # Install dependencies if needed
       - echo "Skipping dependency installation (customize as needed)"
-      # Check for required tools
-
+      
   pre_build:
     commands:
       # Fetch parameters from Parameter Store
-      - PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text)
+      - PARAMETER=$(aws ssm get-parameter --name "${CODEBUILD_PARAM_PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to fetch parameter: ${CODEBUILD_PARAM_PARAMETER_NAME}"; exit 1; }
       - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
       - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
       - ALLOWED_PACKAGES=$(echo $PARAMETER | jq -r '.ALLOWED_PACKAGES')
@@ -28,6 +28,10 @@ phases:
         fi
         if [ -z "$MARTINI_ACCESS_TOKEN" ]; then
           echo "ERROR: Missing required parameter: MARTINI_ACCESS_TOKEN"
+          exit 1
+        fi
+        if [ -z "$ALLOWED_PACKAGES" ]; then
+          echo "ERROR: Missing required parameter: ALLOWED_PACKAGES"
           exit 1
         fi
 
