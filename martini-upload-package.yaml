@@ -9,10 +9,10 @@ phases:
   pre_build:
     commands:
       # Fetch parameters from Parameter Store
-      - PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text)
-      - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
-      - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
-      - ALLOWED_PACKAGES=$(echo $PARAMETER | jq -r '.ALLOWED_PACKAGES')
+      - PARAMETER=$(aws ssm get-parameter --name martini-upload-package --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to fetch parameter: martini-upload-package"; exit 1; }
+      - BASE_URL=$(echo "$PARAMETER" | jq -r '.BASE_URL')
+      - MARTINI_ACCESS_TOKEN=$(echo "$PARAMETER" | jq -r '.MARTINI_ACCESS_TOKEN')
+      - ALLOWED_PACKAGES=$(echo "$PARAMETER" | jq -r '.ALLOWED_PACKAGES')
 
       # Validate required parameters
       - |
@@ -22,6 +22,10 @@ phases:
         fi
         if [ -z "$MARTINI_ACCESS_TOKEN" ]; then
           echo "ERROR: Missing required parameter: MARTINI_ACCESS_TOKEN"
+          exit 1
+        fi
+        if [ -z "$ALLOWED_PACKAGES" ]; then
+          echo "ERROR: Missing required parameter: ALLOWED_PACKAGES"
           exit 1
         fi
 
