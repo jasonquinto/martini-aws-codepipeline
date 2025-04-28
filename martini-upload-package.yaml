@@ -11,11 +11,14 @@ phases:
     commands:
       # Install dependencies if needed
       - echo "Skipping dependency installation (customize as needed)"
-      
+      # Check for required tools
+      - command -v jq >/dev/null 2>&1 || { echo "ERROR: 'jq' is not installed. Please install it and try again."; exit 1; }
+      - command -v zip >/dev/null 2>&1 || { echo "ERROR: 'zip' is not installed. Please install it and try again."; exit 1; }
+
   pre_build:
     commands:
       # Fetch parameters from Parameter Store
-      - PARAMETER=$(aws ssm get-parameter --name "${CODEBUILD_PARAM_PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to fetch parameter: ${CODEBUILD_PARAM_PARAMETER_NAME}"; exit 1; }
+      - PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to fetch parameter: ${PARAMETER_NAME}"; exit 1; }
       - BASE_URL=$(echo $PARAMETER | jq -r '.BASE_URL')
       - MARTINI_ACCESS_TOKEN=$(echo $PARAMETER | jq -r '.MARTINI_ACCESS_TOKEN')
       - ALLOWED_PACKAGES=$(echo $PARAMETER | jq -r '.ALLOWED_PACKAGES')
