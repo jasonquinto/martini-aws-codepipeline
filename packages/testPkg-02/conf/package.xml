@@ -1,4 +1,4 @@
-<package id="com.lonti.sample" context-path="/sample-package" version="1.0.0-SNAPSHOT" stateOnStartup="STARTED">
+<package id="io.toro.testPkg-02" context-path="/testPkg-02" version="1.0.0-SNAPSHOT" stateOnStartup="STARTED">
   <package-dependencies/>
   <startup-services/>
   <shutdown-services/>

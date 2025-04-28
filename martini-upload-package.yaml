@@ -31,11 +31,11 @@ phases:
               echo "Zipping allowed package: $dir"
               zip -r "../${dir}.zip" "$dir"
             else
-              echo "WARNING: Directory $dir does not exist, skipping."
+              echo "WARNING: Package/s $dir does not exist, skipping."
             fi
           done
         else
-          echo "No allowed packages specified, zipping all directories."
+          echo "No allowed packages specified, zipping all packages found in packages directory instead."
           for dir in */; do
             dir=${dir%*/} 
             zip -r "../${dir}.zip" "$dir"

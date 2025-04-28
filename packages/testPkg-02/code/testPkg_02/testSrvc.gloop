@@ -1,0 +1,48 @@
+{
+    "input": [
+        {
+            "name": "name"
+        }
+    ],
+    "output": [
+        {
+            "name": "message"
+        }
+    ],
+    "paths": [
+        "/service"
+    ],
+    "methods": [
+        "GET"
+    ],
+    "steps": [
+        {
+            "type": "invokeCode",
+            "className": "io.toro.martini.LoggerMethods",
+            "methodName": "info",
+            "parameters": [
+                "java.lang.String"
+            ],
+            "inputs": [
+                {
+                    "type": "set",
+                    "expression": "\"Hello, I am $name\"",
+                    "evaluate": true,
+                    "to": [
+                        "message"
+                    ]
+                }
+            ],
+            "outputs": [
+                {
+                    "from": [
+                        "output"
+                    ],
+                    "to": [
+                        "message"
+                    ]
+                }
+            ]
+        }
+    ]
+}
