@@ -24,10 +24,6 @@ phases:
           echo "ERROR: Missing required parameter: MARTINI_ACCESS_TOKEN"
           exit 1
         fi
-        if [ -z "$ALLOWED_PACKAGES" ]; then
-          echo "ERROR: Missing required parameter: ALLOWED_PACKAGES"
-          exit 1
-        fi
 
   build:
     commands:
