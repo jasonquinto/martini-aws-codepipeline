@@ -5,7 +5,8 @@ phases:
     runtime-versions:
       python: 3.8
     commands:
-      - apt-get update && apt-get install -y jq zip curl
+      - # Install dependencies if needed
+      - echo "Skipping dependency installation (customize as needed)"
 
   pre_build:
     commands:
