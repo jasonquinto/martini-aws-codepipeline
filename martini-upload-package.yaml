@@ -4,8 +4,13 @@ phases:
   install:
     commands:
       - # Install dependencies if needed
-      - yum install -y ShellCheck python3-pip
-      - pip3 install shfmt yamllint
+      - echo "Installing ShellCheck, shfmt, and yamllint"
+      - curl -sLO https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz
+      - tar -xf shellcheck-v0.9.0.linux.x86_64.tar.xz
+      - cp shellcheck-v0.9.0/shellcheck /usr/local/bin/
+      - chmod +x /usr/local/bin/shellcheck
+      - curl -sS https://webinstall.dev/shfmt | bash
+      - pip3 install yamllint
 
   pre_build:
     commands:
