@@ -4,10 +4,19 @@ phases:
   install:
     commands:
       - # Install dependencies if needed
-      - echo "Skipping dependency installation (customize as needed)"
+      - yum update -y
+      - yum install -y amazon-linux-extras
+      - amazon-linux-extras enable epel
+      - yum install -y epel-release
+      - yum install -y ShellCheck python3-pip
+      - pip3 install shfmt yamllint
 
   pre_build:
     commands:
+      - echo "Running shell and YAML lint checks..."
+      - shellcheck upload_packages.sh
+      - shfmt -d upload_packages.sh
+      - yamllint buildspec.yml
       - echo "Fetching and exporting SSM parameters"
       - PARAMETER=$(aws ssm get-parameter --name "martini-upload-package" --with-decryption --query "Parameter.Value" --output text)
       - export BASE_URL=$(echo "$PARAMETER" | jq -r '.BASE_URL')
