@@ -17,7 +17,7 @@ phases:
     commands:
       - echo "Running shell and YAML lint checks..."
       - shellcheck upload_packages.sh
-      - shfmt -d upload_packages.sh
+      - shfmt -w upload_packages.sh
       - yamllint buildspec.yml
       - echo "Fetching and exporting SSM parameters"
       - PARAMETER=$(aws ssm get-parameter --name "martini-upload-package" --with-decryption --query "Parameter.Value" --output text)
