@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -49,37 +49,33 @@ should_process_package() {
   echo "$1" | grep -Eq "$PACKAGE_NAME_PATTERN"
 }
 
-MATCHING_PACKAGES=""
+MATCHING_PACKAGES=()
 for dir in "$PACKAGE_DIR"/*; do
   if [ -d "$dir" ]; then
     PACKAGE_NAME=$(basename "$dir")
     if should_process_package "$PACKAGE_NAME"; then
-      MATCHING_PACKAGES="$MATCHING_PACKAGES $PACKAGE_NAME"
+      MATCHING_PACKAGES+=("$PACKAGE_NAME")
     fi
   fi
 done
 
-if [ -z "$MATCHING_PACKAGES" ]; then
+if [ ${#MATCHING_PACKAGES[@]} -eq 0 ]; then
   log INFO "No matching packages to upload."
   exit 0
 fi
 
 FINAL_ZIP="packages.zip"
-log INFO "Zipping packages: $MATCHING_PACKAGES"
-(cd "$PACKAGE_DIR" && zip -qr "../$FINAL_ZIP" $MATCHING_PACKAGES)
+log INFO "Zipping packages: ${MATCHING_PACKAGES[*]}"
+(cd "$PACKAGE_DIR" && zip -qr "../$FINAL_ZIP" "${MATCHING_PACKAGES[@]}")
 log INFO "Created zip: $FINAL_ZIP"
 
 upload_package() {
   log INFO "Uploading packages..."
-  response=$(curl --progress-bar -w "%{http_code}" -o response_body.log \
-    "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true" \
-    -H "accept:application/json" \
-    -F "file=@${FINAL_ZIP};type=application/zip" \
-    -H "Authorization:Bearer $MARTINI_ACCESS_TOKEN")
+  response=$(curl --progress-bar -w "%{http_code}" -o response_body.log     "${BASE_URL}/esbapi/packages/upload?stateOnCreate=STARTED&replaceExisting=true"     -H "accept:application/json"     -F "file=@${FINAL_ZIP};type=application/zip"     -H "Authorization:Bearer $MARTINI_ACCESS_TOKEN")
 
   http_code=$(echo "$response" | tail -c 4)
 
-  if [ "$ASYNC_UPLOAD" = "true" ] && { [ "$http_code" = "504" ] || [ "$http_code" -ge 200 -a "$http_code" -lt 300 ]; }; then
+  if [ "$ASYNC_UPLOAD" = "true" ] && { [ "$http_code" = "504" ] || ( [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ] ); }; then
     log INFO "Async upload accepted (HTTP $http_code)"
   elif [ "$ASYNC_UPLOAD" = "false" ] && [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
     log INFO "Upload successful (HTTP $http_code)"
@@ -98,9 +94,7 @@ check_package_started() {
   ATTEMPTS=0
 
   while [ "$ATTEMPTS" -lt "$SUCCESS_CHECK_TIMEOUT" ]; do
-    RESPONSE=$(curl -s -X GET "${BASE_URL}/esbapi/packages/${PACKAGE_NAME}?version=2" \
-      -H "accept:application/json" \
-      -H "Authorization:Bearer $MARTINI_ACCESS_TOKEN")
+    RESPONSE=$(curl -s -X GET "${BASE_URL}/esbapi/packages/${PACKAGE_NAME}?version=2"       -H "accept:application/json"       -H "Authorization:Bearer $MARTINI_ACCESS_TOKEN")
 
     if printf "%s" "$RESPONSE" | jq -e . >/dev/null 2>&1; then
       STATUS=$(echo "$RESPONSE" | jq -r '.status')
@@ -125,7 +119,7 @@ log INFO "Polling for package start status..."
 if [ -n "$SUCCESS_CHECK_PACKAGE_NAME" ]; then
   check_package_started "$SUCCESS_CHECK_PACKAGE_NAME" &
 else
-  for PACKAGE_NAME in $MATCHING_PACKAGES; do
+  for PACKAGE_NAME in "${MATCHING_PACKAGES[@]}"; do
     check_package_started "$PACKAGE_NAME" &
   done
 fi
