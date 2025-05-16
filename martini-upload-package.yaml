@@ -18,7 +18,7 @@ phases:
       - echo "Running shell and YAML lint checks..."
       - shellcheck upload_packages.sh
       - shfmt -w upload_packages.sh
-      - yamllint martini-upload-package.yml
+      - yamllint martini-upload-package.yaml
       - echo "Fetching and exporting SSM parameters"
       - PARAMETER=$(aws ssm get-parameter --name "martini-upload-package" --with-decryption --query "Parameter.Value" --output text)
       - export BASE_URL=$(echo "$PARAMETER" | jq -r '.BASE_URL')
