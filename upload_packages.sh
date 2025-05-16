@@ -75,8 +75,8 @@ upload_package() {
 
   http_code=$(echo "$response" | tail -c 4)
 
-  if [ "$ASYNC_UPLOAD" = "true" ] && { [ "$http_code" = "504" ] || ( [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ] ); }; then
-    log INFO "Async upload accepted (HTTP $http_code)"
+  if [ "$ASYNC_UPLOAD" = "true" ] && { [ "$http_code" = "504" ] || { [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; }; }; then
+  log INFO "Async upload accepted (HTTP $http_code)"
   elif [ "$ASYNC_UPLOAD" = "false" ] && [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
     log INFO "Upload successful (HTTP $http_code)"
     cat response_body.log
