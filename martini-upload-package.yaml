@@ -25,20 +25,22 @@ phases:
       - echo "Using Parameter Store key: ${PARAMETER_NAME}"
       - PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text)
       - |
-        read -r BASE_URL MARTINI_ACCESS_TOKEN PACKAGE_NAME_PATTERN PACKAGE_DIR ASYNC_UPLOAD SUCCESS_CHECK_TIMEOUT SUCCESS_CHECK_DELAY SUCCESS_CHECK_PACKAGE_NAME <<EOF
-        $(echo "$PARAMETER" | jq -r '
-          [
-            .BASE_URL,
-            .MARTINI_ACCESS_TOKEN,
-            (.PACKAGE_NAME_PATTERN // ".*"),
-            (.PACKAGE_DIR // "packages"),
-            (.ASYNC_UPLOAD // "false"),
-            (.SUCCESS_CHECK_TIMEOUT // 6),
-            (.SUCCESS_CHECK_DELAY // 30),
-            (.SUCCESS_CHECK_PACKAGE_NAME // "")
-          ] | @tsv')
-        EOF
-      - export BASE_URL MARTINI_ACCESS_TOKEN PACKAGE_NAME_PATTERN PACKAGE_DIR ASYNC_UPLOAD SUCCESS_CHECK_TIMEOUT SUCCESS_CHECK_DELAY SUCCESS_CHECK_PACKAGE_NAME
+        read -r BASE_URL MARTINI_ACCESS_TOKEN PACKAGE_NAME_PATTERN PACKAGE_DIR \
+                ASYNC_UPLOAD SUCCESS_CHECK_TIMEOUT SUCCESS_CHECK_DELAY SUCCESS_CHECK_PACKAGE_NAME <<< "$(
+          echo "$PARAMETER" | jq -r '
+            [
+              .BASE_URL,
+              .MARTINI_ACCESS_TOKEN,
+              (.PACKAGE_NAME_PATTERN // ".*"),
+              (.PACKAGE_DIR // "packages"),
+              (.ASYNC_UPLOAD // "false"),
+              (.SUCCESS_CHECK_TIMEOUT // 6),
+              (.SUCCESS_CHECK_DELAY // 30),
+              (.SUCCESS_CHECK_PACKAGE_NAME // "")
+            ] | @tsv'
+        )"
+      - export BASE_URL MARTINI_ACCESS_TOKEN PACKAGE_NAME_PATTERN PACKAGE_DIR
+      - export ASYNC_UPLOAD SUCCESS_CHECK_TIMEOUT SUCCESS_CHECK_DELAY SUCCESS_CHECK_PACKAGE_NAME
 
   build:
     commands:
