@@ -19,9 +19,8 @@ phases:
       - export MARTINI_VERSION=$(echo "$PARAMETER" | jq -r '.MARTINI_VERSION')
       - export ECR_REPO_NAME=$(echo "$PARAMETER" | jq -r '.ECR_REPO_NAME')
 
-      # Fetch region/account ID using AWS CLI
-      - export AWS_REGION=$(aws configure get region)
-      - if [ -z "$AWS_REGION" ]; then export AWS_REGION="us-east-1"; fi
+      # Dynamically detect the region based on CodeBuild runtime metadata
+      - export AWS_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
       - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 
       # Debug output
