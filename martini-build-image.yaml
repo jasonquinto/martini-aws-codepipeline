@@ -1,3 +1,4 @@
+---
 version: 0.2
 
 phases:
@@ -17,15 +18,13 @@ phases:
 
       - PARAMETER=$(aws ssm get-parameter --name "${PARAMETER_NAME}" --with-decryption --query "Parameter.Value" --output text)
       - export MARTINI_VERSION=$(echo "$PARAMETER" | jq -r '.MARTINI_VERSION')
-      - export ECR_REPO_NAME=$(echo "$PARAMETER" | jq -r '.ECR_REPO_NAME')
 
       # Debug output
       - echo "Resolved ECR_REPO_URI=${ECR_REPO_URI}"
-      - echo "Resolved ECR_REPO_NAME=${ECR_REPO_NAME}"
       - echo "Resolved MARTINI_VERSION=${MARTINI_VERSION}"
 
       # Fail fast if any required variable is missing
-      - if [ -z "$ECR_REPO_URI" ] || [ -z "$ECR_REPO_NAME" ] || [ -z "$MARTINI_VERSION" ]; then echo "❌ Missing required environment variables."; exit 1; fi
+      - if [ -z "$ECR_REPO_URI" ] || [ -z "$MARTINI_VERSION" ]; then echo "Missing required environment variables."; exit 1; fi
 
   build:
     commands:
