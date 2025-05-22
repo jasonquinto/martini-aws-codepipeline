@@ -20,7 +20,7 @@ phases:
       - export ECR_REPO_NAME=$(echo "$PARAMETER" | jq -r '.ECR_REPO_NAME')
 
       # Dynamically detect the region based on CodeBuild runtime metadata
-      - export AWS_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
+      - export AWS_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
       - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 
       # Debug output
